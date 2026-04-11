@@ -285,8 +285,8 @@ body{min-height:100vh;background:#0e1015;color:#e0e0e0;font-family:'Space Grotes
         <div class="field"><label class="field-label">Diamètre</label><select class="select input" id="f_diameter"><option value="1.75mm">1.75mm</option><option value="2.85mm">2.85mm</option></select></div>
         <div class="field"><label class="field-label">Couleur</label><div class="color-row"><input type="color" class="color-picker" id="f_color" value="#3b82f6"><input class="input" id="f_colorName" placeholder="Nom de la couleur" style="flex:1"></div></div>
         <div class="field"><label class="field-label">Finition</label><select class="select input" id="f_finish"></select></div>
-        <div class="field"><label class="field-label">Poids bobine (g)</label><input type="number" class="input" id="f_weight" value="1000"></div>
-        <div class="field"><label class="field-label" id="f_remaining_label">Restant : 100%</label><input type="range" min="0" max="100" value="100" id="f_remaining" style="width:100%;margin-top:4px" oninput="document.getElementById('f_remaining_label').textContent='Restant : '+this.value+'%'"></div>
+        <div class="field"><label class="field-label">Poids bobine (g)</label><input type="number" class="input" id="f_weight" value="1000" oninput="updateRemainingPreview()"></div>
+        <div class="field"><label class="field-label" id="f_remaining_label">Restant : 1000g (100%)</label><input type="number" class="input" id="f_remainingG" value="1000" min="0" placeholder="Grammes restants" oninput="updateRemainingPreview()"></div>
         <div class="field"><label class="field-label">Temp. buse (°C)</label><input class="input" id="f_tempNozzle" placeholder="190-220"></div>
         <div class="field"><label class="field-label">Temp. plateau (°C)</label><input class="input" id="f_tempBed" placeholder="50-70"></div>
         <div class="field"><label class="field-label">Prix (€)</label><input class="input" id="f_price" placeholder="24.99"></div>
@@ -608,8 +608,8 @@ function openEditModal(id){
   document.getElementById('f_colorName').value=s.colorName;
   document.getElementById('f_finish').value=s.finish;
   document.getElementById('f_weight').value=s.weight;
-  document.getElementById('f_remaining').value=s.remaining;
-  document.getElementById('f_remaining_label').textContent='Restant : '+s.remaining+'%';
+  document.getElementById('f_remainingG').value=Math.round(s.weight*s.remaining/100);
+  updateRemainingPreview();
   document.getElementById('f_tempNozzle').value=s.tempNozzle;
   document.getElementById('f_tempBed').value=s.tempBed;
   document.getElementById('f_price').value=s.price;
@@ -621,12 +621,19 @@ function openEditModal(id){
 
 function closeFormModal(){document.getElementById('formModal').classList.add('hidden');editingId=null}
 
+function updateRemainingPreview(){
+  const w=Number(document.getElementById('f_weight').value)||1000;
+  const g=Number(document.getElementById('f_remainingG').value)||0;
+  const pct=Math.round(Math.min(100,Math.max(0,g/w*100)));
+  document.getElementById('f_remaining_label').textContent='Restant : '+g+'g ('+pct+'%)';
+}
+
 function resetForm(){
   ['f_name','f_brand','f_colorName','f_tempNozzle','f_tempBed','f_price','f_purchaseDate','f_notes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_material').value='PLA';document.getElementById('f_diameter').value='1.75mm';
   document.getElementById('f_color').value='#3b82f6';document.getElementById('f_finish').value='Mat';
-  document.getElementById('f_weight').value=1000;document.getElementById('f_remaining').value=100;
-  document.getElementById('f_remaining_label').textContent='Restant : 100%';
+  document.getElementById('f_weight').value=1000;document.getElementById('f_remainingG').value=1000;
+  updateRemainingPreview();
   document.getElementById('f_opened').checked=false;
 }
 
@@ -640,7 +647,7 @@ function saveSpool(){
     colorName:document.getElementById('f_colorName').value.trim(),
     diameter:document.getElementById('f_diameter').value,
     weight:Number(document.getElementById('f_weight').value)||1000,
-    remaining:Number(document.getElementById('f_remaining').value),
+    remaining:Math.round(Math.min(100,Math.max(0,(Number(document.getElementById('f_remainingG').value)||0)/(Number(document.getElementById('f_weight').value)||1000)*100))),
     finish:document.getElementById('f_finish').value,
     tempNozzle:document.getElementById('f_tempNozzle').value.trim(),
     tempBed:document.getElementById('f_tempBed').value.trim(),
