@@ -162,6 +162,20 @@ body{min-height:100vh;background:#0e1015;color:#e0e0e0;font-family:'Space Grotes
 .hidden{display:none!important}
 .toast{position:fixed;bottom:24px;right:24px;background:#1a1d23;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 20px;font-size:13px;color:#ccc;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:2000;animation:slideUp .3s ease;font-family:'JetBrains Mono',monospace}
 
+/* ─── Brand management ─── */
+.brand-row{display:flex;gap:8px;align-items:center}
+.brand-row .input{flex:1}
+.btn-brand-add{display:flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);border-radius:10px;color:#8b5cf6;cursor:pointer;flex-shrink:0;transition:background .15s}
+.btn-brand-add:hover{background:rgba(139,92,246,.2)}
+.brand-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;margin-top:12px}
+.brand-item{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:10px 14px}
+.brand-item-color{width:14px;height:14px;border-radius:50%;flex-shrink:0;border:2px solid rgba(255,255,255,.1)}
+.brand-item-name{flex:1;font-size:14px;color:#ddd}
+.brand-item-del{background:none;border:none;color:#555;cursor:pointer;padding:4px;border-radius:6px;display:flex}
+.brand-item-del:hover{color:#ef4444;background:rgba(239,68,68,.1)}
+.brand-add-row{display:flex;gap:8px;margin-top:12px}
+.brand-add-row .input{flex:1}
+
 @media(max-width:600px){
   .header{padding:16px}
   .toolbar{padding:12px 16px}
@@ -278,8 +292,7 @@ body{min-height:100vh;background:#0e1015;color:#e0e0e0;font-family:'Space Grotes
     <div class="modal-body">
       <div class="form-grid">
         <div class="field"><label class="field-label">Nom du filament</label><input class="input" id="f_name" placeholder="Ex: Galaxy Black"></div>
-        <div class="field"><label class="field-label">Marque</label><input class="input" id="f_brand" placeholder="Ex: Bambu Lab" list="brands-list">
-          <datalist id="brands-list"><option value="Bambu Lab"><option value="Prusament"><option value="eSUN"><option value="Polymaker"><option value="Sunlu"><option value="Hatchbox"><option value="Overture"><option value="Eryone"><option value="Creality"><option value="FilamentPM"><option value="Elegoo"><option value="Rosa 3D"><option value="Anycubic"><option value="Cailab"></datalist>
+        <div class="field"><label class="field-label">Marque</label><div class="brand-row"><select class="select input" id="f_brand" style="flex:1"></select><button type="button" class="btn-brand-add" onclick="openBrandsModal()" title="Gérer les marques"><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
         </div>
         <div class="field"><label class="field-label">Matériau</label><select class="select input" id="f_material"></select></div>
         <div class="field"><label class="field-label">Diamètre</label><select class="select input" id="f_diameter"><option value="1.75mm">1.75mm</option><option value="2.85mm">2.85mm</option></select></div>
@@ -313,14 +326,49 @@ body{min-height:100vh;background:#0e1015;color:#e0e0e0;font-family:'Space Grotes
   </div>
 </div>
 
+<!-- ─── Modal Gestion des marques ─── -->
+<div class="modal-overlay hidden" id="brandsModal" onclick="closeBrandsModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Gérer les marques</h2>
+      <button class="modal-close" onclick="closeBrandsModal()"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:#666;margin-bottom:16px;font-family:'JetBrains Mono',monospace">Les marques ajoutées sont visibles par tous les utilisateurs de cette collection.</p>
+      <div class="brand-add-row">
+        <input class="input" id="newBrandName" placeholder="Nom de la marque" onkeydown="if(event.key==='Enter')addBrand()">
+        <input type="color" id="newBrandColor" value="#3b82f6" style="width:44px;height:40px;border:none;border-radius:8px;cursor:pointer;background:transparent;flex-shrink:0">
+        <button class="btn-save" onclick="addBrand()" style="padding:10px 16px;white-space:nowrap">Ajouter</button>
+      </div>
+      <div class="brand-list" id="brandList"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ─── Constants ───
 const MATERIALS=["PLA","PETG","ABS","ASA","TPU","Nylon","PC","PVA","HIPS","PP","Carbon","Bois","Métal","Autre"];
 const FINISHES=["Mat","Brillant","Satiné","Silk","Marble","Galaxy","Glow","Transparent","Autre"];
-const BRAND_COLORS={"Bambu Lab":"#00ae42","Prusament":"#fa6831","eSUN":"#0074d9","Polymaker":"#e74c3c","Sunlu":"#f39c12","Hatchbox":"#8e44ad","Overture":"#2ecc71","Eryone":"#e67e22","Creality":"#3498db","FilamentPM":"#1abc9c"};
+const DEFAULT_BRANDS=[
+  {name:"Bambu Lab",color:"#00ae42"},
+  {name:"Prusament",color:"#fa6831"},
+  {name:"eSUN",color:"#0074d9"},
+  {name:"Polymaker",color:"#e74c3c"},
+  {name:"Sunlu",color:"#f39c12"},
+  {name:"Hatchbox",color:"#8e44ad"},
+  {name:"Overture",color:"#2ecc71"},
+  {name:"Eryone",color:"#e67e22"},
+  {name:"Creality",color:"#3498db"},
+  {name:"FilamentPM",color:"#1abc9c"},
+  {name:"Elegoo",color:"#e74c3c"},
+  {name:"Rosa 3D",color:"#e91e63"},
+  {name:"Anycubic",color:"#00bcd4"},
+  {name:"Cailab",color:"#ff9800"}
+];
 
 // ─── State ───
 let spools = [];
+let brands = []; // synced brand list
 let viewMode = 'grid';
 let editingId = null;
 let deleteConfirmId = null;
@@ -353,6 +401,37 @@ function toast(msg){
 
 function getFirebasePath(){
   return dbUrl.replace(/\/$/,'') + '/filament-vault/' + encodeURIComponent(roomCode) + '.json';
+}
+
+function getBrandsFirebasePath(){
+  return dbUrl.replace(/\/$/,'') + '/filament-vault-brands/global.json';
+}
+
+function getBrandColor(name){
+  const b=brands.find(x=>x.name===name);
+  return b?b.color:'#888';
+}
+
+async function fbSaveBrands(){
+  if(!isOnline)return localStorage.setItem('fv-brands-global',JSON.stringify(brands));
+  try{
+    await fetch(getBrandsFirebasePath(),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(brands)});
+  }catch(e){console.error('Firebase brands save error',e);}
+  localStorage.setItem('fv-brands-global',JSON.stringify(brands));
+}
+
+async function fbLoadBrands(){
+  try{
+    const r=await fetch(getBrandsFirebasePath());
+    if(r.ok){const d=await r.json();if(Array.isArray(d))return d;}
+  }catch(e){console.error('Firebase brands load error',e);}
+  return null;
+}
+
+function initBrands(){
+  // If no brands synced yet, seed with defaults
+  if(!brands||brands.length===0){brands=[...DEFAULT_BRANDS];fbSaveBrands();}
+  refreshBrandSelect();
 }
 
 async function fbSave(){
@@ -420,6 +499,12 @@ async function connectFirebase(){
   const remote=await fbLoad();
   if(remote){spools=remote;localSave();}else{spools=localLoad();}
 
+  // Load brands
+  const remoteBrands=await fbLoadBrands();
+  if(remoteBrands){brands=remoteBrands;}else{brands=[...DEFAULT_BRANDS];}
+  localStorage.setItem('fv-brands-global',JSON.stringify(brands));
+  initBrands();
+
   enterApp();
   fbListen();
 }
@@ -430,6 +515,9 @@ function startOffline(){
   isOnline=false;
   localStorage.setItem('fv-config',JSON.stringify({roomCode,offline:true}));
   spools=localLoad();
+  try{brands=JSON.parse(localStorage.getItem('fv-brands-global')||'[]')}catch(e){brands=[]}
+  if(!brands.length)brands=[...DEFAULT_BRANDS];
+  initBrands();
   enterApp();
   setSyncStatus(false);
   document.getElementById('syncText').textContent='Local';
@@ -456,6 +544,9 @@ function enterApp(){
     if(cfg && cfg.roomCode){
       roomCode=cfg.roomCode;
       spools=localLoad();
+      try{brands=JSON.parse(localStorage.getItem('fv-brands-global')||'[]')}catch(e){brands=[]}
+      if(!brands.length)brands=[...DEFAULT_BRANDS];
+      initBrands();
       if(cfg.offline){
         isOnline=false;dbUrl=null;
         enterApp();
@@ -463,7 +554,9 @@ function enterApp(){
       }else{
         dbUrl=FIREBASE_URL;isOnline=true;
         enterApp();
-        fbLoad().then(d=>{if(d){spools=d;localSave();renderSpools();}});fbListen();
+        fbLoad().then(d=>{if(d){spools=d;localSave();renderSpools();}});
+        fbLoadBrands().then(d=>{if(d){brands=d;localStorage.setItem('fv-brands-global',JSON.stringify(brands));refreshBrandSelect();renderSpools();}});
+        fbListen();
       }
     }
   }catch(e){}
@@ -558,7 +651,7 @@ function renderSpools(){
 
   if(viewMode==='grid'){
     content.innerHTML='<div class="grid">'+filtered.map((s,i)=>{
-      const bc=BRAND_COLORS[s.brand]||'#888';
+      const bc=getBrandColor(s.brand);
       return `<div class="card" style="animation:slideUp .3s ease ${i*.03}s both" onclick="openDetail('${s.id}')" onmouseenter="this.style.borderColor='${s.color}44';this.style.boxShadow='0 8px 30px ${s.color}15'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.05)';this.style.boxShadow='none'">
         <div class="card-bar" style="background:linear-gradient(90deg,${s.color},${s.color}88)"></div>
         <div class="card-body"><div class="card-header"><div class="card-info">
@@ -666,7 +759,7 @@ function saveSpool(){
 function openDetail(id){
   const s=spools.find(x=>x.id===id);if(!s)return;
   deleteConfirmId=null;
-  const bc=BRAND_COLORS[s.brand]||'#aaa';
+  const bc=getBrandColor(s.brand);
   const barColor=s.remaining<15?'#ef4444':s.remaining<40?'#f59e0b':`linear-gradient(90deg,${s.color},${s.color}cc)`;
   const details=[{l:'Matériau',v:s.material},{l:'Diamètre',v:s.diameter},{l:'Poids',v:s.weight+'g'},{l:'Finition',v:s.finish},{l:'Temp. buse',v:s.tempNozzle?s.tempNozzle+'°C':'—'},{l:'Temp. plateau',v:s.tempBed?s.tempBed+'°C':'—'},{l:'Prix',v:s.price?s.price+' €':'—'},{l:'Achat',v:s.purchaseDate||'—'}];
   document.getElementById('detailBody').innerHTML=`
@@ -694,6 +787,67 @@ function confirmDelete(id){
 function dupSpool(id){
   const s=spools.find(x=>x.id===id);if(!s)return;
   spools.unshift({...s,id:genId(),name:s.name+' (copie)'});fbSave();renderSpools();toast('Bobine dupliquée !');
+}
+
+// ═══════════════════════════════════════════════════
+//  BRAND MANAGEMENT
+// ═══════════════════════════════════════════════════
+
+function refreshBrandSelect(){
+  const sel=document.getElementById('f_brand');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Choisir —</option>';
+  brands.sort((a,b)=>a.name.localeCompare(b.name)).forEach(b=>{
+    const o=document.createElement('option');o.value=b.name;o.textContent=b.name;
+    o.style.color=b.color;
+    sel.appendChild(o);
+  });
+  if(cur)sel.value=cur;
+}
+
+function openBrandsModal(){
+  renderBrandList();
+  document.getElementById('brandsModal').classList.remove('hidden');
+  document.getElementById('newBrandName').value='';
+  document.getElementById('newBrandColor').value='#3b82f6';
+}
+
+function closeBrandsModal(){
+  document.getElementById('brandsModal').classList.add('hidden');
+  refreshBrandSelect();
+}
+
+function renderBrandList(){
+  const list=document.getElementById('brandList');
+  if(brands.length===0){list.innerHTML='<p style="color:#555;font-size:13px;text-align:center;padding:20px">Aucune marque enregistrée</p>';return}
+  list.innerHTML=brands.sort((a,b)=>a.name.localeCompare(b.name)).map((b,i)=>`
+    <div class="brand-item">
+      <div class="brand-item-color" style="background:${b.color}"></div>
+      <span class="brand-item-name">${esc(b.name)}</span>
+      <button class="brand-item-del" onclick="deleteBrand(${i})" title="Supprimer">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+function addBrand(){
+  const name=document.getElementById('newBrandName').value.trim();
+  const color=document.getElementById('newBrandColor').value;
+  if(!name){toast('Entre un nom de marque');return}
+  if(brands.some(b=>b.name.toLowerCase()===name.toLowerCase())){toast('Cette marque existe déjà');return}
+  brands.push({name,color});
+  fbSaveBrands();
+  renderBrandList();
+  document.getElementById('newBrandName').value='';
+  toast(name+' ajoutée !');
+}
+
+function deleteBrand(idx){
+  const name=brands[idx].name;
+  brands.splice(idx,1);
+  fbSaveBrands();
+  renderBrandList();
+  toast(name+' supprimée');
 }
 </script>
 </body>
