@@ -281,9 +281,9 @@ async function searchPrices(){
   saveHistory(query);
 
   try{
-    // Use SerpAPI Google Shopping
+    // Use SerpAPI Google Shopping (via their CORS proxy)
     const searchQuery = encodeURIComponent('filament 3D ' + query);
-    const url = `https://serpapi.com/search.json?engine=google_shopping&q=${searchQuery}&gl=fr&hl=fr&api_key=${apiKey}`;
+    const url = `https://cors.serpapi.com/search.json?engine=google_shopping&q=${searchQuery}&gl=fr&hl=fr&api_key=${apiKey}`;
     
     const resp = await fetch(url);
     if(!resp.ok){
