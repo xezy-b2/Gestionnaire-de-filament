@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparateur de prix — Filament Vault</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><circle cx='24' cy='24' r='20' stroke='%233b82f6' stroke-width='3' fill='none'/><circle cx='24' cy='24' r='8' stroke='%233b82f6' stroke-width='2.5' fill='%233b82f6' fill-opacity='0.2'/><circle cx='24' cy='24' r='3' fill='%233b82f6'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+body{min-height:100vh;background:#0e1015;color:#e0e0e0;font-family:'Space Grotesk','Segoe UI',sans-serif}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+
+/* ─── Header ─── */
+.header{background:linear-gradient(135deg,#12141a,#1a1d25);border-bottom:1px solid rgba(255,255,255,0.05);padding:24px 32px}
+.header-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.logo-area{display:flex;align-items:center;gap:14px}
+.logo-icon{background:linear-gradient(135deg,#10b981,#059669);border-radius:14px;padding:10px;display:flex}
+.logo-title{font-size:22px;font-weight:700;letter-spacing:-.02em;font-family:'JetBrains Mono',monospace;background:linear-gradient(90deg,#fff,#aaa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-sub{font-size:12px;color:#666;font-family:'JetBrains Mono',monospace}
+.btn-back{display:flex;align-items:center;gap:8px;padding:10px 20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;color:#aaa;font-size:14px;cursor:pointer;font-family:'Space Grotesk',sans-serif;text-decoration:none;transition:background .15s}
+.btn-back:hover{background:rgba(255,255,255,.08);color:#fff}
+
+/* ─── Setup ─── */
+.api-setup{max-width:1200px;margin:0 auto;padding:20px 32px}
+.api-bar{display:flex;gap:10px;align-items:center;background:#14161c;border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:12px 16px;flex-wrap:wrap}
+.api-bar label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.api-input{flex:1;min-width:200px;padding:8px 12px;background:#0e1015;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#eee;font-size:13px;outline:none;font-family:'Space Mono',monospace;transition:border-color .2s}
+.api-input:focus{border-color:#10b981}
+.api-saved{color:#10b981;font-size:11px;font-family:'JetBrains Mono',monospace;animation:fadeIn .3s ease}
+.api-help{font-size:11px;color:#555;margin-top:8px;padding:0 16px}
+.api-help a{color:#3b82f6}
+
+/* ─── Search ─── */
+.search-section{max-width:1200px;margin:0 auto;padding:24px 32px}
+.search-box{display:flex;gap:12px;flex-wrap:wrap}
+.search-input{flex:1;min-width:250px;padding:14px 20px;background:#14161c;border:1px solid rgba(255,255,255,.08);border-radius:14px;color:#eee;font-size:16px;outline:none;font-family:'Space Grotesk',sans-serif;transition:border-color .2s}
+.search-input:focus{border-color:#10b981}
+.search-input::placeholder{color:#444}
+.btn-search{display:flex;align-items:center;gap:8px;padding:14px 28px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:14px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;box-shadow:0 4px 15px rgba(16,185,129,.3);transition:transform .15s,box-shadow .15s;white-space:nowrap}
+.btn-search:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(16,185,129,.4)}
+.btn-search:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.search-suggestions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.suggestion{padding:6px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:20px;color:#888;font-size:12px;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .15s}
+.suggestion:hover{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.2);color:#10b981}
+
+/* ─── Results ─── */
+.results-section{max-width:1200px;margin:0 auto;padding:0 32px 60px}
+.results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.results-title{font-size:14px;color:#888;font-family:'JetBrains Mono',monospace}
+.results-count{font-size:12px;color:#555;font-family:'JetBrains Mono',monospace}
+.results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+
+/* ─── Product card ─── */
+.product-card{background:#14161c;border:1px solid rgba(255,255,255,.05);border-radius:16px;overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s;animation:slideUp .3s ease both}
+.product-card:hover{transform:translateY(-3px);border-color:rgba(16,185,129,.2);box-shadow:0 8px 30px rgba(16,185,129,.08)}
+.product-card-best{border-color:rgba(16,185,129,.3);background:linear-gradient(135deg,#14161c,rgba(16,185,129,.03))}
+.product-img{width:100%;height:180px;object-fit:contain;background:#0e1015;padding:16px}
+.product-img-placeholder{width:100%;height:180px;background:#0e1015;display:flex;align-items:center;justify-content:center;color:#333}
+.product-body{padding:16px 20px}
+.product-title{font-size:14px;font-weight:600;color:#ddd;line-height:1.4;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.product-source{font-size:11px;color:#888;font-family:'JetBrains Mono',monospace;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.product-source-icon{width:16px;height:16px;border-radius:4px;background:rgba(255,255,255,.06)}
+.product-price-row{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.product-price{font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#10b981}
+.product-price-old{font-size:13px;color:#666;text-decoration:line-through;font-family:'JetBrains Mono',monospace}
+.product-best-badge{font-size:9px;padding:3px 8px;border-radius:4px;background:rgba(16,185,129,.15);color:#10b981;font-weight:700;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em}
+.product-delivery{font-size:11px;color:#666;font-family:'JetBrains Mono',monospace;margin-bottom:12px}
+.product-rating{display:flex;align-items:center;gap:6px;font-size:12px;color:#888;margin-bottom:12px}
+.product-stars{color:#f59e0b}
+.btn-buy{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:10px;color:#10b981;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;font-family:'Space Grotesk',sans-serif;transition:background .15s}
+.btn-buy:hover{background:rgba(16,185,129,.2)}
+
+/* ─── Loading ─── */
+.loading{text-align:center;padding:60px 20px}
+.spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.06);border-top-color:#10b981;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+.loading-text{font-size:14px;color:#666;font-family:'JetBrains Mono',monospace}
+
+.skeleton-card{background:#14161c;border:1px solid rgba(255,255,255,.05);border-radius:16px;overflow:hidden}
+.skeleton-img{width:100%;height:180px;background:linear-gradient(90deg,#1a1d25 25%,#22252d 50%,#1a1d25 75%);background-size:400px 100%;animation:shimmer 1.5s infinite}
+.skeleton-body{padding:16px 20px}
+.skeleton-line{height:14px;border-radius:4px;background:linear-gradient(90deg,#1a1d25 25%,#22252d 50%,#1a1d25 75%);background-size:400px 100%;animation:shimmer 1.5s infinite;margin-bottom:10px}
+.skeleton-line.w60{width:60%}
+.skeleton-line.w40{width:40%}
+.skeleton-line.w80{width:80%}
+.skeleton-line.h24{height:24px}
+
+/* ─── Empty ─── */
+.empty-results{text-align:center;padding:60px 20px;color:#444}
+.empty-results p{margin-top:12px;font-size:14px;font-family:'JetBrains Mono',monospace}
+
+/* ─── History ─── */
+.history-section{max-width:1200px;margin:0 auto;padding:0 32px 20px}
+.history-title{font-size:11px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace;margin-bottom:10px}
+.history-list{display:flex;gap:8px;flex-wrap:wrap}
+.history-item{display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:8px;font-size:12px;color:#888;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .15s}
+.history-item:hover{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.15);color:#3b82f6}
+.history-del{background:none;border:none;color:#555;cursor:pointer;padding:0 0 0 4px;font-size:14px;line-height:1}
+.history-del:hover{color:#ef4444}
+
+.toast{position:fixed;bottom:24px;right:24px;background:#1a1d23;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 20px;font-size:13px;color:#ccc;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:2000;animation:slideUp .3s ease;font-family:'JetBrains Mono',monospace}
+
+@media(max-width:600px){
+  .header{padding:16px}
+  .search-section{padding:16px}
+  .results-section{padding:0 16px 40px}
+  .api-setup{padding:12px 16px}
+  .results-grid{grid-template-columns:1fr}
+  .search-box{flex-direction:column}
+  .btn-search{width:100%;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<!-- ─── Header ─── -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="logo-icon">
+        <svg width="28" height="28" viewBox="0 0 20 20" fill="none"><path d="M3 14l4-4 3 3 7-7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 6h3v3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <div class="logo-title">Comparateur de prix</div>
+        <div class="logo-sub">Trouve le meilleur prix pour ton filament</div>
+      </div>
+    </div>
+    <a href="index.html" class="btn-back">
+      <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 10H5m0 0l4-4m-4 4l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Mes bobines
+    </a>
+  </div>
+</header>
+
+<!-- ─── API Key ─── -->
+<div class="api-setup">
+  <div class="api-bar">
+    <label>Clé SerpAPI</label>
+    <input class="api-input" id="apiKey" type="password" placeholder="Colle ta clé API ici..." oninput="saveApiKey()">
+    <span class="api-saved hidden" id="apiSaved">✓ Sauvée</span>
+  </div>
+  <div class="api-help">
+    Gratuit — crée un compte sur <a href="https://serpapi.com/users/sign_up" target="_blank">serpapi.com</a> (100 recherches/mois offertes), puis copie ta clé API depuis le dashboard.
+  </div>
+</div>
+
+<!-- ─── Search ─── -->
+<div class="search-section">
+  <div class="search-box">
+    <input class="search-input" id="searchQuery" placeholder="Ex: PLA Bambu Lab noir 1kg" onkeydown="if(event.key==='Enter')searchPrices()">
+    <button class="btn-search" id="btnSearch" onclick="searchPrices()">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Comparer les prix
+    </button>
+  </div>
+  <div class="search-suggestions" id="suggestions">
+    <span class="suggestion" onclick="quickSearch(this)">PLA Bambu Lab 1kg</span>
+    <span class="suggestion" onclick="quickSearch(this)">PETG eSUN 1kg</span>
+    <span class="suggestion" onclick="quickSearch(this)">TPU 95A flexible</span>
+    <span class="suggestion" onclick="quickSearch(this)">ABS Polymaker noir</span>
+    <span class="suggestion" onclick="quickSearch(this)">PLA Silk rainbow</span>
+    <span class="suggestion" onclick="quickSearch(this)">Nylon Carbon Fiber</span>
+  </div>
+</div>
+
+<!-- ─── History ─── -->
+<div class="history-section hidden" id="historySection">
+  <div class="history-title">Recherches récentes</div>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<!-- ─── Results ─── -->
+<div class="results-section">
+  <div class="results-header hidden" id="resultsHeader">
+    <div class="results-title" id="resultsTitle"></div>
+    <div class="results-count" id="resultsCount"></div>
+  </div>
+  <div id="resultsGrid"></div>
+</div>
+
+<script>
+// ─── State ───
+let searchHistory = [];
+
+// ─── Init ───
+(function init(){
+  const key = localStorage.getItem('fv-serpapi-key');
+  if(key) document.getElementById('apiKey').value = key;
+  loadHistory();
+})();
+
+// ─── API Key ───
+function saveApiKey(){
+  const key = document.getElementById('apiKey').value.trim();
+  if(key){
+    localStorage.setItem('fv-serpapi-key', key);
+    const el = document.getElementById('apiSaved');
+    el.classList.remove('hidden');
+    setTimeout(()=> el.classList.add('hidden'), 2000);
+  }
+}
+
+// ─── Toast ───
+function toast(msg){
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// ─── History ───
+function loadHistory(){
+  try{ searchHistory = JSON.parse(localStorage.getItem('fv-search-history')||'[]'); }catch(e){ searchHistory=[]; }
+  renderHistory();
+}
+
+function saveHistory(query){
+  searchHistory = searchHistory.filter(q=>q!==query);
+  searchHistory.unshift(query);
+  if(searchHistory.length>10) searchHistory = searchHistory.slice(0,10);
+  localStorage.setItem('fv-search-history', JSON.stringify(searchHistory));
+  renderHistory();
+}
+
+function removeHistory(idx){
+  searchHistory.splice(idx,1);
+  localStorage.setItem('fv-search-history', JSON.stringify(searchHistory));
+  renderHistory();
+}
+
+function renderHistory(){
+  const section = document.getElementById('historySection');
+  const list = document.getElementById('historyList');
+  if(!searchHistory.length){ section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  list.innerHTML = searchHistory.map((q,i)=>`
+    <span class="history-item" onclick="quickSearchText('${esc(q)}')">
+      ${esc(q)}
+      <button class="history-del" onclick="event.stopPropagation();removeHistory(${i})">×</button>
+    </span>`).join('');
+}
+
+// ─── Quick search ───
+function quickSearch(el){ document.getElementById('searchQuery').value = el.textContent.trim(); searchPrices(); }
+function quickSearchText(q){ document.getElementById('searchQuery').value = q; searchPrices(); }
+
+// ─── Search ───
+async function searchPrices(){
+  const query = document.getElementById('searchQuery').value.trim();
+  const apiKey = document.getElementById('apiKey').value.trim();
+  
+  if(!query){ toast('Entre un nom de filament à rechercher'); return; }
+  if(!apiKey){ toast('Ajoute ta clé SerpAPI pour comparer les prix'); return; }
+
+  const btn = document.getElementById('btnSearch');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:18px;height:18px;border-width:2px;margin:0"></span> Recherche...';
+
+  // Show skeletons
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = Array(6).fill('').map(()=>`
+    <div class="skeleton-card">
+      <div class="skeleton-img"></div>
+      <div class="skeleton-body">
+        <div class="skeleton-line w80"></div>
+        <div class="skeleton-line w60"></div>
+        <div class="skeleton-line h24 w40"></div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('resultsHeader').classList.remove('hidden');
+  document.getElementById('resultsTitle').textContent = 'Recherche de "'+query+'" en cours...';
+  document.getElementById('resultsCount').textContent = '';
+
+  saveHistory(query);
+
+  try{
+    // Use SerpAPI Google Shopping
+    const searchQuery = encodeURIComponent('filament 3D ' + query);
+    const url = `https://serpapi.com/search.json?engine=google_shopping&q=${searchQuery}&gl=fr&hl=fr&api_key=${apiKey}`;
+    
+    const resp = await fetch(url);
+    if(!resp.ok){
+      const err = await resp.json().catch(()=>({}));
+      throw new Error(err.error || 'Erreur API ('+resp.status+')');
+    }
+    const data = await resp.json();
+    
+    const results = (data.shopping_results || []).map(item=>({
+      title: item.title || '',
+      price: item.extracted_price || parsePrice(item.price),
+      priceText: item.price || '',
+      source: item.source || '',
+      link: item.link || item.product_link || '',
+      image: item.thumbnail || '',
+      delivery: item.delivery || '',
+      rating: item.rating || null,
+      reviews: item.reviews || null,
+      oldPrice: item.old_price ? parsePrice(item.old_price) : null,
+      oldPriceText: item.old_price || ''
+    })).filter(r=>r.price>0);
+
+    // Sort by price
+    results.sort((a,b)=>a.price - b.price);
+
+    renderResults(query, results);
+  }catch(err){
+    grid.innerHTML = `<div class="empty-results" style="grid-column:1/-1">
+      <svg width="48" height="48" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#444" stroke-width="1.5"/><path d="M7 7l6 6M13 7l-6 6" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <p>Erreur : ${esc(err.message)}</p>
+      <p style="color:#555;font-size:12px;margin-top:8px">Vérifie ta clé API ou réessaie</p>
+    </div>`;
+    document.getElementById('resultsTitle').textContent = 'Erreur de recherche';
+    document.getElementById('resultsCount').textContent = '';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="2"/><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Comparer les prix';
+}
+
+function parsePrice(str){
+  if(!str)return 0;
+  const m = str.replace(/[^\d,\.]/g,'').replace(',','.');
+  return parseFloat(m)||0;
+}
+
+function renderResults(query, results){
+  const grid = document.getElementById('resultsGrid');
+  document.getElementById('resultsTitle').textContent = 'Résultats pour "'+query+'"';
+  document.getElementById('resultsCount').textContent = results.length+' offre'+(results.length>1?'s':'');
+
+  if(!results.length){
+    grid.innerHTML = `<div class="empty-results" style="grid-column:1/-1">
+      <svg width="48" height="48" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="#444" stroke-width="1.5"/><path d="M13.5 13.5L17 17" stroke="#444" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <p>Aucun résultat trouvé</p>
+      <p style="color:#555;font-size:12px;margin-top:8px">Essaie avec d'autres mots-clés</p>
+    </div>`;
+    return;
+  }
+
+  const bestPrice = results[0].price;
+  const linkIcon = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M11 3h6v6M18 2L10 10M8 3H4a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  grid.innerHTML = '<div class="results-grid">' + results.map((r,i)=>{
+    const isBest = r.price === bestPrice && results.length > 1;
+    const stars = r.rating ? '★'.repeat(Math.round(r.rating)) + '☆'.repeat(5-Math.round(r.rating)) : '';
+    const saving = r.oldPrice && r.oldPrice > r.price ? Math.round((1-r.price/r.oldPrice)*100) : 0;
+
+    return `<div class="product-card${isBest?' product-card-best':''}" style="animation-delay:${i*0.05}s">
+      ${r.image?`<img class="product-img" src="${esc(r.image)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=product-img-placeholder><svg width=40 height=40 viewBox=\\'0 0 48 48\\' fill=none><circle cx=24 cy=24 r=20 stroke=#333 stroke-width=3 fill=none/><circle cx=24 cy=24 r=8 stroke=#333 stroke-width=2.5 fill=#333 fill-opacity=.2/></svg></div>'">`:'<div class="product-img-placeholder"><svg width="40" height="40" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#333" stroke-width="3" fill="none"/><circle cx="24" cy="24" r="8" stroke="#333" stroke-width="2.5" fill="#333" fill-opacity=".2"/></svg></div>'}
+      <div class="product-body">
+        <div class="product-title">${esc(r.title)}</div>
+        <div class="product-source">
+          <div class="product-source-icon"></div>
+          ${esc(r.source)}
+        </div>
+        <div class="product-price-row">
+          <span class="product-price">${r.price.toFixed(2)} €</span>
+          ${r.oldPriceText?`<span class="product-price-old">${esc(r.oldPriceText)}</span>`:''}
+          ${saving?`<span class="product-best-badge">-${saving}%</span>`:''}
+          ${isBest?'<span class="product-best-badge">Meilleur prix</span>':''}
+        </div>
+        ${r.delivery?`<div class="product-delivery">${esc(r.delivery)}</div>`:''}
+        ${stars?`<div class="product-rating"><span class="product-stars">${stars}</span> ${r.rating} ${r.reviews?'('+r.reviews+')':''}</div>`:''}
+        ${r.link?`<a href="${esc(r.link)}" target="_blank" rel="noopener" class="btn-buy">${linkIcon} Voir l'offre</a>`:''}
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+</script>
+</body>
+</html>
