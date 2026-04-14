@@ -159,6 +159,22 @@ body{min-height:100vh;background:#0e1015;color:#e0e0e0;font-family:'Space Grotes
 .btn-del{display:flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.1);border-radius:10px;color:#ef4444;font-size:13px;cursor:pointer}
 .btn-del-confirm{display:flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.3);border-radius:10px;color:#ef4444;font-size:13px;font-weight:700;cursor:pointer}
 
+/* ─── Quick Use Widget ─── */
+.quick-use{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;margin-bottom:20px}
+.quick-use-title{font-size:10px;color:#666;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.quick-use-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.quick-use-presets{display:flex;gap:6px;flex-wrap:wrap}
+.btn-preset{padding:5px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#aaa;font-size:12px;font-weight:600;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:background .15s,color .15s}
+.btn-preset:hover{background:rgba(59,130,246,.15);color:#3b82f6;border-color:rgba(59,130,246,.3)}
+.quick-use-custom{display:flex;align-items:center;gap:6px;margin-top:8px}
+.quick-use-custom .input{width:90px;padding:6px 10px;font-size:13px}
+.btn-use-confirm{padding:6px 14px;background:linear-gradient(135deg,#3b82f6,#6366f1);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;white-space:nowrap}
+.btn-use-confirm:hover{opacity:.85}
+.btn-use-confirm:disabled{opacity:.35;cursor:not-allowed}
+.quick-use-feedback{font-size:11px;color:#666;font-family:'JetBrains Mono',monospace;margin-top:6px}
+.quick-use-feedback.warn{color:#f59e0b}
+.quick-use-feedback.danger{color:#ef4444}
+
 .hidden{display:none!important}
 .toast{position:fixed;bottom:24px;right:24px;background:#1a1d23;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 20px;font-size:13px;color:#ccc;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:2000;animation:slideUp .3s ease;font-family:'JetBrains Mono',monospace}
 
@@ -768,6 +784,17 @@ function openDetail(id){
     <div class="detail-brand">${s.brand?`<span style="color:${bc}">${esc(s.brand)}</span> · `:''}${esc(s.colorName)}</div></div></div>
     <div class="detail-grid">${details.map(d=>`<div class="detail-cell"><div class="detail-cell-label">${d.l}</div><div class="detail-cell-value">${esc(d.v)}</div></div>`).join('')}</div>
     <div class="detail-remaining"><div class="detail-remaining-header"><span class="detail-remaining-label">Restant</span><span class="detail-remaining-value">${s.remaining}% — ${Math.round(s.weight*s.remaining/100)}g</span></div><div class="detail-bar"><div class="detail-bar-fill" style="width:${s.remaining}%;background:${barColor}"></div></div></div>
+    <div class="quick-use">
+      <div class="quick-use-title">Utilisation rapide</div>
+      <div class="quick-use-presets">
+        ${[10,25,50,100,250].map(g=>`<button class="btn-preset" onclick="applyQuickUse('${s.id}',${g})">−${g}g</button>`).join('')}
+      </div>
+      <div class="quick-use-custom">
+        <input class="input" id="quickUseInput" type="number" min="1" max="${Math.round(s.weight*s.remaining/100)}" placeholder="Xg" oninput="updateQuickUseFeedback('${s.id}')">
+        <button class="btn-use-confirm" id="quickUseBtn" onclick="applyQuickUseCustom('${s.id}')">Utiliser</button>
+      </div>
+      <div class="quick-use-feedback" id="quickUseFeedback"></div>
+    </div>
     ${s.notes?`<div class="detail-notes"><div class="detail-notes-label">Notes</div><div class="detail-notes-text">${esc(s.notes)}</div></div>`:''}
     <div class="detail-actions">
       <button class="btn-dup" onclick="dupSpool('${s.id}')"><svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="5" y="5" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M4 13V5a3 3 0 013-3h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Dupliquer</button>
@@ -787,6 +814,43 @@ function confirmDelete(id){
 function dupSpool(id){
   const s=spools.find(x=>x.id===id);if(!s)return;
   spools.unshift({...s,id:genId(),name:s.name+' (copie)'});fbSave();renderSpools();toast('Bobine dupliquée !');
+}
+
+// ═══════════════════════════════════════════════════
+//  QUICK USE
+// ═══════════════════════════════════════════════════
+
+function applyQuickUse(id, grams){
+  const s=spools.find(x=>x.id===id);if(!s)return;
+  const currentG=Math.round(s.weight*s.remaining/100);
+  const newG=Math.max(0,currentG-grams);
+  const newPct=Math.round(newG/s.weight*100);
+  s.remaining=newPct;
+  fbSave();renderSpools();
+  // Re-open detail to refresh the view
+  openDetail(id);
+  toast(`−${grams}g utilisés · ${newG}g restants`);
+}
+
+function applyQuickUseCustom(id){
+  const val=parseInt(document.getElementById('quickUseInput').value);
+  if(!val||val<=0){toast('Entre une quantité valide');return}
+  applyQuickUse(id,val);
+}
+
+function updateQuickUseFeedback(id){
+  const s=spools.find(x=>x.id===id);if(!s)return;
+  const val=parseInt(document.getElementById('quickUseInput').value)||0;
+  const currentG=Math.round(s.weight*s.remaining/100);
+  const newG=Math.max(0,currentG-val);
+  const newPct=Math.round(newG/s.weight*100);
+  const fb=document.getElementById('quickUseFeedback');
+  const btn=document.getElementById('quickUseBtn');
+  if(!val){fb.textContent='';fb.className='quick-use-feedback';btn.disabled=false;return}
+  if(val>currentG){fb.textContent=`⚠ Dépasse le stock disponible (${currentG}g max)`;fb.className='quick-use-feedback danger';btn.disabled=true;return}
+  btn.disabled=false;
+  fb.textContent=`→ Il restera ${newG}g (${newPct}%)`;
+  fb.className='quick-use-feedback'+(newPct<15?' danger':newPct<40?' warn':'');
 }
 
 // ═══════════════════════════════════════════════════
